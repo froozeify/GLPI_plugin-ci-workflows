@@ -377,6 +377,16 @@ jobs:
         shell: "bash"
         run: |
           sudo service apache2 start
+
+      # Temp step, while waiting to be merged https://github.com/glpi-project/docker-images/pull/300
+      - name: "Setup coverage driver"
+        if: ${{ !cancelled() && steps.coverage-config.outputs.coverage-enabled == 'true' }}
+        shell: "bash"
+        run: |
+          if ! php -m | grep -q -E 'xdebug|pcov'; then
+             echo -e "\033[0;33mInstalling PCOV driver...\033[0m"
+             sudo pecl install pcov || true
+          fi
       - name: "PHPUnit"
         if: ${{ !cancelled() && hashFiles(format('{0}/phpunit.xml', inputs.plugin-key)) != '' }}
         env:
