@@ -392,7 +392,7 @@ jobs:
           fi
 
           if grep -qi 'testdox="true"' phpunit.xml; then
-            sed -i 's/ testdox="[Tt]rue"//g' phpunit.xml
+            sed -i 's/ testdox="true"//gI' phpunit.xml
           fi
 
           if [[ -f "vendor/bin/phpunit" ]]; then
