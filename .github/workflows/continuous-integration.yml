@@ -391,6 +391,10 @@ jobs:
             PHP_FLAGS="-d pcov.enabled=1 -d pcov.directory=."
           fi
 
+          if grep -qi 'testdox="true"' phpunit.xml; then
+            sed -i 's/ testdox="[Tt]rue"//g' phpunit.xml
+          fi
+
           if [[ -f "vendor/bin/phpunit" ]]; then
             php $PHP_FLAGS vendor/bin/phpunit $PHPUNIT_FLAGS
           elif [[ -f "../../vendor/bin/phpunit" ]]; then
