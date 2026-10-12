@@ -248,6 +248,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           PLUGIN_KEY: ${{ inputs.plugin-key }}
+          BASE_REF: ${{ github.base_ref }}
         run: |
           # URLs added in this PR inside <download_url> tags point to archives not yet published
           new_download_urls=$(curl -s -H "Authorization: token $GH_TOKEN" \
@@ -265,6 +266,10 @@ jobs:
                 echo "✅ $url ($status)"
               elif echo "$new_download_urls" | grep -qxF "$url"; then
                 echo "⚠️ $url ($status, new release archive may not be published yet)"
+              elif [[ "$url" =~ /download_file/([^/]+)/(.+)$ ]] \
+                && [[ "${BASH_REMATCH[1]}" == "$BASE_REF" ]] \
+                && [[ -f "/var/www/glpi/plugins/$PLUGIN_KEY/${BASH_REMATCH[2]}" ]]; then
+                echo "⚠️ $url ($status, file is present in this PR and targets '$BASE_REF': it will be reachable once merged)"
               else
                 echo "❌ $url ($status)"
                 HAS_FAILURE='true'
