@@ -257,7 +257,25 @@ jobs:
             | grep '^+' | grep '<download_url>' | grep -oP 'https?://[^\s<>"]+' | sort -u || true)
           echo -e "\033[0;33mChecking URLs in XML manifest files...\033[0m"
           HAS_FAILURE='false'
-          for xml_file in "/var/www/glpi/plugins/$PLUGIN_KEY/plugin.xml" "/var/www/glpi/plugins/$PLUGIN_KEY/${PLUGIN_KEY}.xml"; do
+          plugin_dir="/var/www/glpi/plugins/$PLUGIN_KEY"
+
+          # Works for refs containing a slash (e.g. 11.0/bugfixes)
+          ref_prefix="/download_file/${BASE_REF}/"
+          is_file_added_by_pr() {
+            local url="$1"
+            if [[ "$url" != *"$ref_prefix"* ]]; then
+              return 1
+            fi
+
+            local relative_path="${url#*"$ref_prefix"}"
+            if [[ -f "$plugin_dir/$relative_path" ]]; then
+              return 0
+            fi
+
+            return 1
+          }
+
+          for xml_file in "$plugin_dir/plugin.xml" "$plugin_dir/${PLUGIN_KEY}.xml"; do
             [[ -f "$xml_file" ]] || continue
             echo "Checking $(basename "$xml_file")..."
             while IFS= read -r url; do
@@ -266,9 +284,7 @@ jobs:
                 echo "✅ $url ($status)"
               elif echo "$new_download_urls" | grep -qxF "$url"; then
                 echo "⚠️ $url ($status, new release archive may not be published yet)"
-              elif [[ "$url" =~ /download_file/([^/]+)/(.+)$ ]] \
-                && [[ "${BASH_REMATCH[1]}" == "$BASE_REF" ]] \
-                && [[ -f "/var/www/glpi/plugins/$PLUGIN_KEY/${BASH_REMATCH[2]}" ]]; then
+              elif is_file_added_by_pr "$url"; then
                 echo "⚠️ $url ($status, file is present in this PR and targets '$BASE_REF': it will be reachable once merged)"
               else
                 echo "❌ $url ($status)"
