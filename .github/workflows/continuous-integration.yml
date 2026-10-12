@@ -259,6 +259,11 @@ jobs:
           HAS_FAILURE='false'
           plugin_dir="/var/www/glpi/plugins/$PLUGIN_KEY"
 
+          # Files added (or renamed to a new path) by the whole PR, not only its last commit
+          added_files=$(curl -s -H "Authorization: token $GH_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files?per_page=100" \
+            | jq -r '.[] | select(.status == "added" or .status == "renamed") | .filename')
+
           # Works for refs containing a slash (e.g. 11.0/bugfixes)
           ref_prefix="/download_file/${BASE_REF}/"
           is_file_added_by_pr() {
@@ -268,7 +273,7 @@ jobs:
             fi
 
             local relative_path="${url#*"$ref_prefix"}"
-            if [[ -f "$plugin_dir/$relative_path" ]]; then
+            if grep -qxF "$relative_path" <<< "$added_files"; then
               return 0
             fi
 
